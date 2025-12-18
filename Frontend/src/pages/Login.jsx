@@ -13,25 +13,37 @@ const Login = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const handleLogin = async (e) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
+  e.preventDefault();
+  setError("");
+  setLoading(true);
 
-    const { email, password } = formData;
+  const { email, password } = formData;
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
 
-    if (error) {
-      setError(error.message);
-    } else {
-      navigate("/home");
-    }
-
+  if (error) {
+    setError(error.message);
     setLoading(false);
-  };
+    return;
+  }
+
+  // ✅ Store user ID safely
+  const userId = data?.user?.id;
+  if (userId) {
+    localStorage.setItem("userId", userId);
+    console.log("✅ Logged in as:", userId);
+  } else {
+    console.error("⚠️ No user ID returned from Supabase.");
+  }
+
+  // ✅ Navigate only once, after saving user
+  navigate("/home");
+  setLoading(false);
+};
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-900 text-white px-6">

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState,useEffect } from "react";
 import { UserPlus } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
@@ -11,31 +11,49 @@ const Signup = () => {
 
   const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
-
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data } = await supabase.auth.getUser();
+      if (data?.user) {
+        // Already logged in — go directly to home
+        localStorage.setItem("userId", data.user.id);
+        navigate("/home");
+      }
+    };
+    checkUser();
+  }, [navigate]);
   const handleSignup = async (e) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
+  e.preventDefault();
+  setError("");
+  setLoading(true);
 
-    const { email, password, name } = formData;
+  const { email, password, name } = formData;
 
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { full_name: name },
-      },
-    });
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: { full_name: name },
+    },
+  });
 
-    if (error) {
-      setError(error.message);
-    } else {
-      //alert("Signup successful! Check your email for confirmation.");
-      navigate("/home");
-    }
-
+  if (error) {
+    setError(error.message);
     setLoading(false);
-  };
+    return;
+  }
+
+  // ✅ Save user ID to localStorage
+  const userId = data?.user?.id;
+  if (userId) {
+    localStorage.setItem("userId", userId);
+    console.log("🧠 Saved new user:", userId);
+  }
+
+  // ✅ Redirect
+  navigate("/home");
+  setLoading(false);
+};
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-900 text-white px-6">

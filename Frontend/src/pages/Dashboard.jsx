@@ -1,141 +1,103 @@
-import React from "react";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  RadialBarChart,
-  RadialBar,
-  PolarAngleAxis,
-} from "recharts";
+import { MoveRight } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { RadialBarChart, RadialBar, ResponsiveContainer, Legend } from "recharts";
 
 const Dashboard = () => {
-  // Get saved profile data
-  const skills = JSON.parse(localStorage.getItem("userSkills")) || [];
-  const skillScore = parseInt(localStorage.getItem("skillScore")) || 0;
+  const [skills, setSkills] = useState([]);
+  const [score, setScore] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  // Temporary: Create skillData from stored skills
-  const skillData = skills.map((skill) => ({
-    name: skill,
-    level: Math.floor(Math.random() * 40) + 60, // random 60–100 just to visualize
-  }));
+  useEffect(() => {
+    const fetchSkills = async () => {
+      try {
+        const userId = localStorage.getItem("userId");
+        if (!userId) {
+          setError("User not logged in");
+          return;
+        }
 
-  // Dummy weekly activity (until you build real tracking)
-  const activityData = [
-    { week: "Week 1", progress: 10 },
-    { week: "Week 2", progress: 25 },
-    { week: "Week 3", progress: 45 },
-    { week: "Week 4", progress: 60 },
-    { week: "Week 5", progress: 80 },
+        const res = await fetch(`http://127.0.0.1:8000/api/get-skills/${userId}/`);
+        if (!res.ok) throw new Error("Failed to fetch skills");
+
+        const data = await res.json();
+
+        setSkills(data.skills || []);
+        setScore(data.score || 0);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSkills();
+  }, []);
+
+  const skillChartData = [
+    { name: "Skill Score", value: score, fill: "#6366F1"},
   ];
 
-  // Temporary user info (later from Supabase auth profile)
-  const user = {
-    name: "User",
-    role: "Aspiring Developer",
-    email: "user@example.com",
-    profileScore: 80,
-    roadmapProgress: 30,
-  };
+  if (loading) return <p className="text-center text-gray-300 mt-10">Loading dashboard...</p>;
+  if (error) return <p className="text-center text-red-400 mt-10">{error}</p>;
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white px-6 py-10">
-      <h1 className="text-4xl font-bold mb-8 text-center">
-        Welcome back, <span className="text-indigo-400">{user.name}</span> 👋
-      </h1>
+    <div className="min-h-screen bg-slate-900 text-white p-6">
+      <h1 className="text-3xl font-bold mb-8 text-center">Your Dashboard</h1>
 
-      {/* Grid Layout */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+      {/* --- Skill Score Radial Chart --- */}
+      <div className="bg-slate-800 p-6 rounded-2xl mb-8 max-w-md mx-auto shadow-lg">
+        <h2 className="text-xl font-semibold mb-4 text-center text-indigo-300">Overall Skill Score</h2>
 
-        {/* Profile Card */}
-        <div className="col-span-1 bg-slate-800 p-6 rounded-2xl shadow-md">
-          <h2 className="text-xl font-semibold mb-4">Profile Summary</h2>
-          <div className="space-y-2 text-gray-300">
-            <p><span className="font-semibold">Role:</span> {user.role}</p>
-            <p><span className="font-semibold">Email:</span> {user.email}</p>
-            <p><span className="font-semibold">Profile Strength:</span> {user.profileScore}%</p>
-          </div>
-
-          <div className="mt-6">
-            <p className="text-gray-400 mb-1">Roadmap Progress</p>
-            <div className="w-full bg-slate-700 h-3 rounded-full">
-              <div className="bg-indigo-500 h-3 rounded-full" style={{ width: `${user.roadmapProgress}%` }}></div>
-            </div>
-            <p className="text-sm text-right mt-1 text-gray-400">{user.roadmapProgress}% Complete</p>
-          </div>
-        </div>
-
-        {/* Skill Score Chart */}
-        <div className="col-span-1 bg-slate-800 p-6 rounded-2xl shadow-md">
-          <h2 className="text-xl font-semibold mb-4">Skill Score</h2>
-          <ResponsiveContainer width="100%" height={250}>
+        <div style={{ width: "100%", height: 240 }}>
+          <ResponsiveContainer>
             <RadialBarChart
               cx="50%"
               cy="50%"
               innerRadius="70%"
               outerRadius="100%"
-              barSize={15}
-              data={[{ name: "Skill Score", value: skillScore, fill: "#6366f1" }]}
+              barSize={18}
+              data={skillChartData}
               startAngle={90}
               endAngle={-270}
             >
-              <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
-              <RadialBar dataKey="value" cornerRadius={10} background />
+              <RadialBar dataKey="value" cornerRadius={10} />
+              <Legend
+                iconSize={10}
+                layout="vertical"
+                verticalAlign="middle"
+                align="right"
+              />
             </RadialBarChart>
           </ResponsiveContainer>
-          <p className="text-center text-gray-400">Skill Score: {skillScore}/100</p>
         </div>
 
-        {/* Weekly Learning Activity */}
-        <div className="col-span-1 bg-slate-800 p-6 rounded-2xl shadow-md">
-          <h2 className="text-xl font-semibold mb-4">Weekly Learning Progress</h2>
-          <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={activityData}>
-              <XAxis dataKey="week" stroke="#ccc" />
-              <YAxis stroke="#ccc" />
-              <Tooltip />
-              <Line type="monotone" dataKey="progress" stroke="#6366f1" strokeWidth={3} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+        <p className="text-center text-gray-300 mt-3 text-lg font-medium">
+          {score}/100
+        </p>
       </div>
 
-      {/* Skills Table */}
-      <div className="max-w-6xl mx-auto mt-12 bg-slate-800 p-8 rounded-2xl shadow-md">
-        <h2 className="text-2xl font-semibold mb-6">Your Skills Overview</h2>
+      {/* --- Skills List --- */}
+      <div className="bg-slate-800 p-6 rounded-2xl shadow-lg max-w-2xl mx-auto">
+        <h2 className="text-xl font-semibold mb-4 text-indigo-300 text-center">Detected Skills</h2>
 
-        <div className="overflow-x-auto">
-          <table className="min-w-full border-collapse text-gray-300">
-            <thead>
-              <tr className="text-indigo-400 border-b border-slate-700">
-                <th className="py-3 px-4 text-left">Skill</th>
-                <th className="py-3 px-4 text-left">Proficiency</th>
-                <th className="py-3 px-4 text-left">Progress</th>
-              </tr>
-            </thead>
-            <tbody>
-              {skillData.map((skill, index) => (
-                <tr key={index} className="border-b border-slate-700 hover:bg-slate-700">
-                  <td className="py-3 px-4">{skill.name}</td>
-                  <td className="py-3 px-4">{skill.level}%</td>
-                  <td className="py-3 px-4">
-                    <div className="w-full bg-slate-700 h-2 rounded-full">
-                      <div className="bg-indigo-500 h-2 rounded-full" style={{ width: `${skill.level}%` }}></div>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Insights Placeholder */}
-      <div className="max-w-6xl mx-auto mt-12 bg-slate-800 p-8 rounded-2xl text-gray-300 text-center">
-        <h2 className="text-2xl font-semibold text-indigo-400 mb-2">Career Insights (Coming Soon)</h2>
-        <p>Soon you'll see personalized job recommendations & industry trends.</p>
+        {skills.length === 0 ? (
+          <p className="text-center text-gray-400">No skills found yet. Upload your resume!</p>
+        ) : (
+          <ul className="space-y-3">
+            {skills.map((skill, index) => (
+              <li key={index} className="bg-slate-700 p-3 rounded-xl flex justify-between items-center">
+                <span className="font-medium text-indigo-200">{skill.name}</span>
+                <div className="text-right">
+                  <p className="text-sm text-gray-400">Level: {skill.level}%</p>
+                  <p className="text-sm text-gray-500">
+                    Confidence: {(skill.confidence * 100).toFixed(0)}%
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </div>
   );
