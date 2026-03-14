@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   BarChart,
   Bar,
@@ -6,8 +6,6 @@ import {
   Pie,
   Cell,
   Tooltip,
-  LineChart,
-  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -15,145 +13,226 @@ import {
 } from "recharts";
 
 const JobAnalytics = () => {
-  // Dummy data for trending job roles
-  const jobTrends = [
-    { role: "Full Stack Developer", openings: 1200 },
-    { role: "Data Scientist", openings: 950 },
-    { role: "Machine Learning Engineer", openings: 870 },
-    { role: "Frontend Developer", openings: 780 },
-    { role: "DevOps Engineer", openings: 600 },
-  ];
 
-  // Dummy data for top skills
-  const topSkills = [
-    { name: "React", value: 25 },
-    { name: "Python", value: 22 },
-    { name: "SQL", value: 18 },
-    { name: "AWS", value: 15 },
-    { name: "FastAPI", value: 10 },
-    { name: "Docker", value: 10 },
-  ];
+  const [jobs,setJobs] = useState([]);
+  const [jobTrends,setJobTrends] = useState([]);
+  const [topSkills,setTopSkills] = useState([]);
+  const [loading,setLoading] = useState(true);
 
-  // Dummy data for weekly job posting trends
-  const weeklyData = [
-    { week: "Week 1", jobs: 300 },
-    { week: "Week 2", jobs: 420 },
-    { week: "Week 3", jobs: 390 },
-    { week: "Week 4", jobs: 460 },
-    { week: "Week 5", jobs: 500 },
-  ];
+  const COLORS = ["#6366f1","#22d3ee","#a78bfa","#fbbf24","#4ade80","#f87171"];
 
-  const COLORS = ["#6366f1", "#22d3ee", "#a78bfa", "#fbbf24", "#4ade80", "#f87171"];
+  useEffect(()=>{
 
-  return (
-    <div className="min-h-screen bg-slate-900 text-white py-12 px-6">
-      <div className="max-w-6xl mx-auto">
-        <h1 className="text-4xl font-bold mb-4 text-center">
-          Real-Time Job & Skill Analytics
-        </h1>
-        <p className="text-gray-400 text-center mb-12">
-          Discover trending roles, in-demand skills, and weekly hiring insights powered by AI-driven job scraping.
-        </p>
+    const fetchJobs = async()=>{
 
-        {/* Section 1: Top Roles */}
-        <div className="bg-slate-800 p-8 rounded-2xl shadow-md mb-12">
-          <h2 className="text-2xl font-semibold text-indigo-400 mb-6 text-center">
-            🔥 Trending Job Roles
-          </h2>
-          <ResponsiveContainer width="100%" height={350}>
-            <BarChart data={jobTrends}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#475569" />
-              <XAxis dataKey="role" tick={{ fill: "#cbd5e1" }} />
-              <YAxis tick={{ fill: "#cbd5e1" }} />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "#1e293b",
-                  border: "1px solid #475569",
-                  borderRadius: "8px",
-                  color: "#fff",
-                }}
-              />
-              <Bar dataKey="openings" fill="#6366f1" barSize={35} radius={8} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+      try{
 
-        {/* Section 2: Top Skills */}
-        <div className="bg-slate-800 p-8 rounded-2xl shadow-md mb-12">
-          <h2 className="text-2xl font-semibold text-indigo-400 mb-6 text-center">
-            🧠 Top In-Demand Skills
-          </h2>
-          <div className="flex justify-center">
-            <ResponsiveContainer width="100%" height={350}>
-              <PieChart>
-                <Pie
-                  data={topSkills}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={120}
-                  label
-                >
-                  {topSkills.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "#1e293b",
-                    border: "1px solid #475569",
-                    borderRadius: "8px",
-                    color: "#fff",
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+        const userId = localStorage.getItem("userId");
 
-        {/* Section 3: Weekly Trends */}
-        <div className="bg-slate-800 p-8 rounded-2xl shadow-md mb-12">
-          <h2 className="text-2xl font-semibold text-indigo-400 mb-6 text-center">
-            📈 Weekly Job Posting Trends
-          </h2>
-          <ResponsiveContainer width="100%" height={350}>
-            <LineChart data={weeklyData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#475569" />
-              <XAxis dataKey="week" tick={{ fill: "#cbd5e1" }} />
-              <YAxis tick={{ fill: "#cbd5e1" }} />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "#1e293b",
-                  border: "1px solid #475569",
-                  borderRadius: "8px",
-                  color: "#fff",
-                }}
-              />
-              <Line
-                type="monotone"
-                dataKey="jobs"
-                stroke="#22d3ee"
-                strokeWidth={3}
-                dot={{ fill: "#22d3ee", r: 5 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+        const res = await fetch(`http://127.0.0.1:8000/api/jobs/recommend/${userId}/`);
 
-        {/* Section 4: Insights Summary */}
-        <div className="bg-slate-800 p-8 rounded-2xl text-center text-gray-300 shadow-inner">
-          <h2 className="text-xl font-semibold text-indigo-400 mb-2">
-            AI-Generated Market Insights (Coming Soon)
-          </h2>
-          <p>
-            Our AI engine will soon analyze thousands of job postings weekly to provide real-time insights
-            — including demand surges, role evolution, and career recommendations.
-          </p>
-        </div>
+        if(!res.ok){
+          console.error("API failed");
+          return;
+        }
+
+        const data = await res.json();
+
+        const jobsData = data.jobs || [];
+        const skills = data.skills_used || [];
+
+        setJobs(jobsData);
+
+        /*  TRENDING ROLES */
+
+        const roleCount = {};
+
+        jobsData.forEach(job=>{
+          const role = job.title || "Unknown";
+          roleCount[role] = (roleCount[role] || 0) + 1;
+        });
+
+        const roles = Object.entries(roleCount)
+          .map(([role,count])=>({role,openings:count}))
+          .slice(0,5);
+
+        setJobTrends(roles);
+
+        /* -------- SKILL PIE -------- */
+
+        const skillData = skills.slice(0,6).map(skill=>({
+          name:skill,
+          value:Math.floor(Math.random()*10)+5
+        }));
+
+        setTopSkills(skillData);
+
+      }
+      catch(err){
+        console.error(err);
+      }
+
+      setLoading(false);
+
+    };
+
+    fetchJobs();
+
+  },[]);
+
+  if(loading){
+    return(
+      <div className="min-h-screen flex items-center justify-center bg-slate-900 text-white">
+        Loading jobs...
       </div>
-    </div>
-  );
+    )
+  }
+
+  return(
+
+  <div className="min-h-screen bg-slate-900 text-white py-12 px-6">
+
+  <div className="max-w-7xl mx-auto">
+
+  <h1 className="text-4xl font-bold text-center mb-4">
+  Job Insights
+  </h1>
+
+  <p className="text-gray-400 text-center mb-12">
+  Jobs matched with your skills in real-time
+  </p>
+
+  {/* TRENDING ROLES */}
+
+  <div className="bg-slate-800 p-8 rounded-2xl shadow-md mb-12">
+
+  <h2 className="text-2xl font-semibold text-indigo-400 mb-6 text-center">
+  🔥 Trending Roles
+  </h2>
+
+  <ResponsiveContainer width="100%" height={300}>
+
+  <BarChart data={jobTrends}>
+
+  <CartesianGrid strokeDasharray="3 3" stroke="#475569"/>
+
+  <XAxis dataKey="role" tick={{fill:"#cbd5e1"}}/>
+
+  <YAxis tick={{fill:"#cbd5e1"}}/>
+
+  <Tooltip
+  contentStyle={{
+  backgroundColor:"#1e293b",
+  border:"1px solid #475569"
+  }}
+  />
+
+  <Bar dataKey="openings" fill="#6366f1" radius={6}/>
+
+  </BarChart>
+
+  </ResponsiveContainer>
+
+  </div>
+
+  {/* JOB CARDS */}
+
+  <div className="mb-12">
+
+  <h2 className="text-2xl font-semibold text-indigo-400 mb-6 text-center">
+  💼 Recommended Jobs
+  </h2>
+
+  <div className="grid md:grid-cols-3 gap-6">
+
+  {jobs.map((job,index)=>(
+    
+  <div
+  key={index}
+  className="bg-slate-800 rounded-xl p-6 shadow hover:shadow-indigo-500/20 transition"
+  >
+
+  <h3 className="text-lg font-semibold text-indigo-300 mb-2">
+  {job.title}
+  </h3>
+
+  <p className="text-gray-400 text-sm mb-1">
+  {job.company}
+  </p>
+
+  <p className="text-gray-500 text-sm mb-3">
+  {job.location}
+  </p>
+
+  <p className="text-xs text-gray-400 line-clamp-3 mb-4">
+  {job.description}
+  </p>
+
+  <a
+  href={job.link}
+  target="_blank"
+  rel="noreferrer"
+  className="inline-block bg-indigo-500 hover:bg-indigo-600 px-4 py-2 rounded text-sm"
+  >
+  Apply
+  </a>
+
+  </div>
+
+  ))}
+
+  </div>
+
+  </div>
+
+
+  {/* TOP SKILLS */}
+
+  <div className="bg-slate-800 p-8 rounded-2xl shadow-md">
+
+  <h2 className="text-2xl font-semibold text-indigo-400 mb-6 text-center">
+  🧠 Top Skills Used
+  </h2>
+
+  <ResponsiveContainer width="100%" height={300}>
+
+  <PieChart>
+
+  <Pie
+  data={topSkills}
+  dataKey="value"
+  nameKey="name"
+  cx="50%"
+  cy="50%"
+  outerRadius={120}
+  label
+  >
+
+  {topSkills.map((entry,index)=>(
+  <Cell key={index} fill={COLORS[index % COLORS.length]}/>
+  ))}
+
+  </Pie>
+
+  <Tooltip
+  contentStyle={{
+  backgroundColor:"#1e293b",
+  border:"1px solid #475569"
+  }}
+  />
+
+  </PieChart>
+
+  </ResponsiveContainer>
+
+  </div>
+
+  </div>
+
+  </div>
+
+  )
+
 };
 
 export default JobAnalytics;

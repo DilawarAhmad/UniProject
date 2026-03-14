@@ -1,10 +1,8 @@
 import spacy
 import re
 
-# Load once globally
 nlp = spacy.load("en_core_web_sm")
 
-# Define your skill database
 SKILL_DATABASE = [
     "python", "java", "javascript", "react", "node.js", "angular", "vue",
     "html", "css", "sql", "mysql", "postgresql", "mongodb",
@@ -35,13 +33,11 @@ def extract_skills(text):
         found_skills = set()
         doc = nlp(text)
 
-        # ✅ Exact match with boundaries (very accurate)
         for skill in SKILL_DATABASE:
             pattern = r'\b' + re.escape(skill) + r'\b'
             if re.search(pattern, text):
                 found_skills.add(skill)
 
-        # ✅ Named entity and phrase-based fallback
         for ent in doc.ents:
             phrase = ent.text.lower().strip()
             if phrase in SKILL_DATABASE:
