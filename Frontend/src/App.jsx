@@ -9,11 +9,13 @@ import JobAnalytics from "./pages/JobAnalytics";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import ProtectedRoute from "./components/ProtectedRoute";
+import Skills from "./pages/skills";
 function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+        <Route path="/skills" element={<ProtectedRoute><Skills /></ProtectedRoute>} />
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/upload" element={<ProtectedRoute><ResumeUpload /></ProtectedRoute>} />
         <Route path="/roadmap" element={<Roadmap />} />

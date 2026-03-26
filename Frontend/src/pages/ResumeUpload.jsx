@@ -108,7 +108,7 @@ const ResumeUpload = () => {
       localStorage.setItem("userSkills", JSON.stringify(result.skills));
       localStorage.setItem("skillScore", result.score);
 
-      navigate("/dashboard");
+      navigate("/skills");
     } catch (err) {
       console.error("❌ Upload failed:", err);
       alert("Error — try again");
