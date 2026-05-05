@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState,useRef } from "react";
 import {
   BarChart,
   Bar,
@@ -17,8 +17,9 @@ const JobAnalytics = () => {
   const [jobTrends, setJobTrends] = useState([]);
   const [topSkills, setTopSkills] = useState([]);
   const [internships, setInternships] = useState([]);
-  const [appliedLinks, setAppliedLinks] = useState([]); // ✅ NEW
+  const [appliedLinks, setAppliedLinks] = useState([]); 
   const [loading, setLoading] = useState(true);
+  const hasFetched = useRef(false);
 
   const COLORS = ["#6366f1", "#22d3ee", "#a78bfa", "#fbbf24", "#4ade80", "#f87171"];
 
@@ -27,12 +28,46 @@ const JobAnalytics = () => {
       try {
         const userId = localStorage.getItem("userId");
 
+        // ✅ CORRECT reload detection (THIS FIXES YOUR ISSUE)
+        const navEntry = performance.getEntriesByType("navigation")[0];
+        const isReload = navEntry && navEntry.type === "reload";
+
+        // ================= CACHE LOGIC =================
+        const cached = localStorage.getItem("jobs_cache");
+        const cachedTime = localStorage.getItem("jobs_cache_time");
+
+        const ONE_HOUR = 60 * 60 * 1000;
+
+        if (
+          !isReload &&   // ❗ DO NOT use cache on refresh
+          cached &&
+          cachedTime &&
+          Date.now() - Number(cachedTime) < ONE_HOUR
+        ) {
+          console.log("⚡ Using cached jobs");
+
+          const parsed = JSON.parse(cached);
+
+          setJobs(parsed.jobs || []);
+          setInternships(parsed.internships || []);
+          setJobTrends(parsed.trending_jobs || []);
+          setTopSkills(parsed.topSkills || []);
+          setAppliedLinks(parsed.appliedLinks || []);
+
+          setLoading(false);
+          return;
+        }
+
+        console.log("🌐 Fetching fresh jobs");
+        if (hasFetched.current) return;   // ✅ prevents double call
+        hasFetched.current = true;
         const res = await fetch(
           `http://127.0.0.1:8000/api/jobs/recommend/${userId}/`
         );
 
         if (!res.ok) {
           console.error("API failed");
+          setLoading(false);
           return;
         }
 
@@ -47,14 +82,13 @@ const JobAnalytics = () => {
         setInternships(internshipData);
         setJobTrends(trendingData);
 
-        // 🔥 FETCH APPLIED JOBS (NEW)
         const appliedRes = await fetch(
           `http://127.0.0.1:8000/api/jobs/applied/${userId}/`
         );
         const appliedData = await appliedRes.json();
-        setAppliedLinks(appliedData.map(j => j.link));
+        const applied = appliedData.map(j => j.link);
+        setAppliedLinks(applied);
 
-        /* ============================== */
         const skillFrequency = {};
 
         jobsData.forEach((job) => {
@@ -75,6 +109,20 @@ const JobAnalytics = () => {
 
         setTopSkills(skillData);
 
+        // ================= SAVE CACHE =================
+        localStorage.setItem(
+          "jobs_cache",
+          JSON.stringify({
+            jobs: jobsData,
+            internships: internshipData,
+            trending_jobs: trendingData,
+            topSkills: skillData,
+            appliedLinks: applied,
+          })
+        );
+
+        localStorage.setItem("jobs_cache_time", Date.now().toString());
+
       } catch (err) {
         console.error(err);
       }
@@ -85,7 +133,6 @@ const JobAnalytics = () => {
     fetchJobs();
   }, []);
 
-  // ❤️ SAVE (UNCHANGED LOGIC)
   const saveJob = async (job) => {
     const userId = localStorage.getItem("userId");
 
@@ -100,7 +147,6 @@ const JobAnalytics = () => {
     alert("Job saved!");
   };
 
-  // 🔥 APPLY JOB (NEW ONLY)
   const applyJob = async (job) => {
     const userId = localStorage.getItem("userId");
 
@@ -116,7 +162,6 @@ const JobAnalytics = () => {
       }),
     });
 
-    // update UI instantly
     setAppliedLinks(prev => [...prev, job.link]);
   };
 
@@ -127,7 +172,6 @@ const JobAnalytics = () => {
       </div>
     );
   }
-
   return (
     <div className="min-h-screen bg-slate-900 text-white py-12 px-6">
       <div className="max-w-7xl mx-auto">
@@ -140,7 +184,6 @@ const JobAnalytics = () => {
           Jobs matched with your skills intelligently
         </p>
 
-        {/* ================= TRENDING ================= */}
         <div className="bg-slate-800 p-8 rounded-2xl shadow-md mb-12">
           <h2 className="text-2xl font-semibold text-indigo-400 mb-6 text-center">
             🔥 Trending Roles
@@ -162,14 +205,12 @@ const JobAnalytics = () => {
           </ResponsiveContainer>
         </div>
 
-        {/* ================= RECOMMENDED JOBS ================= */}
         <div className="mb-12">
           <h2 className="text-2xl font-semibold text-indigo-400 mb-6 text-center">
             💼 Recommended Jobs
           </h2>
 
           <div className="grid md:grid-cols-3 gap-6">
-
             {jobs.map((job, index) => {
               const isApplied = appliedLinks.includes(job.link);
 
@@ -178,8 +219,6 @@ const JobAnalytics = () => {
                   key={index}
                   className="relative bg-slate-800 rounded-xl p-6 shadow hover:shadow-indigo-500/20 transition"
                 >
-
-                  {/* ❤️ SAVE */}
                   <button
                     onClick={() => saveJob(job)}
                     className="absolute top-3 right-3 bg-pink-500 hover:bg-pink-600 px-2 py-1 rounded text-xs"
@@ -203,9 +242,7 @@ const JobAnalytics = () => {
                     {job.description}
                   </p>
 
-                  {/* 🔥 ONLY ADDITION */}
                   <div className="flex gap-2">
-
                     <a
                       href={job.link}
                       target="_blank"
@@ -226,7 +263,6 @@ const JobAnalytics = () => {
                     >
                       {isApplied ? "Applied" : "Apply"}
                     </button>
-
                   </div>
 
                   {job.score && (
@@ -234,15 +270,12 @@ const JobAnalytics = () => {
                       Match Score: {job.score}
                     </p>
                   )}
-
                 </div>
               );
             })}
-
           </div>
         </div>
 
-        {/* ================= INTERNSHIPS ================= */}
         {internships.length > 0 && (
           <div className="mb-12">
             <h2 className="text-2xl font-semibold text-indigo-400 mb-6 text-center">
@@ -281,7 +314,6 @@ const JobAnalytics = () => {
           </div>
         )}
 
-        {/* ================= TOP SKILLS ================= */}
         <div className="bg-slate-800 p-8 rounded-2xl shadow-md">
           <h2 className="text-2xl font-semibold text-indigo-400 mb-6 text-center">
             🧠 Top Skills Used
