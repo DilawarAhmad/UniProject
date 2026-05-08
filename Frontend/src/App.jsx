@@ -10,17 +10,25 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Skills from "./pages/skills";
+import Layout from "./components/Layout";
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-        <Route path="/skills" element={<ProtectedRoute><Skills /></ProtectedRoute>} />
-        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-        <Route path="/upload" element={<ProtectedRoute><ResumeUpload /></ProtectedRoute>} />
-        <Route path="/roadmap" element={<Roadmap />} />
-        <Route path="/chatbot" element={<Chatbot />} />
-        <Route path="/analytics" element={<JobAnalytics />} />
+
+        {/* 🔐 Protected + Header Layout */}
+        <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+
+          <Route path="/home" element={<Home />} />
+          <Route path="/skills" element={<Skills />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/upload" element={<ResumeUpload />} />
+          <Route path="/roadmap" element={<Roadmap />} />
+          <Route path="/chatbot" element={<Chatbot />} />
+          <Route path="/analytics" element={<JobAnalytics />} />
+        </Route>
+
+        {/* 🌐 Public Routes (no header) */}
         <Route path="/login" element={<Login />} />
         <Route path="/" element={<Signup />} />
 

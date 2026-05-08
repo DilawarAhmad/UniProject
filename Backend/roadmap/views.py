@@ -3,52 +3,65 @@ from django.views.decorators.csrf import csrf_exempt
 import json
 import requests
 import re
-
+from .agent import agentFun
 OLLAMA_URL = "http://localhost:11434/api/generate"
 
 
 # 🔥 HARD PARSER (REBUILDS ROADMAP CLEANLY)
 def clean_output(text):
-    # Extract numbered lines properly
-    matches = re.findall(r'\d+\.\s*.*', text)
+    lines = text.split("\n")
 
     steps = []
     seen = set()
 
-    for line in matches:
+    for line in lines:
         line = line.strip()
 
-        # 🔥 remove nested numbering like "3. something"
-        line = re.sub(r'^\d+\.\s*', '', line)
+        # 🔥 STOP if new generation starts
+        if (
+            "Instruction" in line or
+            "User" in line or
+            line.lower().startswith("generate")
+        ):
+            break
 
-        # remove extra numbering inside
-        line = re.sub(r'\b\d+\.\s*', '', line)
-
-        # normalize spaces
-        line = re.sub(r'\s+', ' ', line)
-
-        # skip junk
-        if len(line) < 10:
+        match = re.match(r'^(\d+)\.\s*(.*)', line)
+        if not match:
             continue
 
-        # ensure explanation exists
-        if "(" not in line:
-            line += " "
+        content = match.group(2).strip()
 
-        # avoid duplicates
-        if line in seen:
+        # Remove junk after step
+        content = content.split("Instruction")[0].strip()
+
+        # Normalize
+        content = re.sub(r'\s+', ' ', content)
+
+        if len(content) < 5:
             continue
-        seen.add(line)
 
-        steps.append(line)
+        if content in seen:
+            continue
+        seen.add(content)
 
-    # 🔥 rebuild clean numbering
+        steps.append(content)
+
+    # 🔥 REMOVE SECOND ROADMAP (if numbering restarts)
     final_steps = []
-    for i, step in enumerate(steps[:12], 1):
-        final_steps.append(f"{i}. {step}")
+    for step in steps:
+        if step in final_steps:
+            break
+        final_steps.append(step)
 
-    return "\n".join(final_steps)
+    if len(final_steps) < 8:
+        return ""
 
+    # 🔥 rebuild numbering cleanly
+    result = []
+    for i, step in enumerate(final_steps[:20], 1):
+        result.append(f"{i}. {step}")
+
+    return "\n".join(result)
 @csrf_exempt
 def generate_roadmap(request):
     if request.method != "POST":
@@ -60,29 +73,9 @@ def generate_roadmap(request):
 
         if not user_input:
             return JsonResponse({"error": "Empty query"}, status=400)
-
-        # 🔥 SIMPLIFIED + STRONG PROMPT
         prompt = f"""
-        Create a learning roadmap.
-
-        STRICT FORMAT:
-        1. Topic (short explanation)
-
-        RULES:
-        - ONLY ONE roadmap
-        - 8 to 12 steps
-        - Each step MUST have explanation in brackets
-        - Do NOT repeat steps
-        - Do NOT generate multiple roadmaps
-
-        USER:
-        {user_input}
-
-        OUTPUT:
-        Start EXACTLY like this:
-        1.
-        """
-
+    {user_input}
+    """
         response = requests.post(
             OLLAMA_URL,
             json={
@@ -90,19 +83,11 @@ def generate_roadmap(request):
                 "prompt": prompt,
                 "stream": False,
                 "options": {
-                    "temperature": 0.6,   # 🔥 lower = more stable
-                    "top_p": 0.9,
-                    "repeat_penalty": 1.2,
-                    "num_predict": 300,
-                    # 🔥 HARD STOP AFTER 12 STEPS
-                    "stop": [
-                    "\n13.", "\n14.", "\n15.",
-                    "\n1. Learn",      # 🔥 stops restart
-                    "\n1.",            # 🔥 critical
-                    "Instruction:",
-                    "User request:"
-                ]
-                }
+                "temperature": 0.05,   # 🔥 even more stable
+                "top_p": 0.9,
+                "repeat_penalty": 1.15,
+                "num_predict": 800
+            }
             }
         )
 
@@ -129,9 +114,11 @@ def generate_roadmap(request):
                 "7. Explore tools and frameworks (expand capabilities)\n"
                 "8. Build production-ready projects (prepare for real-world use)"
             )
-
+        final_roadmap = agentFun(user_input,cleaned)
+        if not final_roadmap:
+            final_roadmap = cleaned
         return JsonResponse({
-            "roadmap": cleaned
+            "roadmap": final_roadmap
         })
 
     except Exception as e:
