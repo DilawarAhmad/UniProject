@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 const platformLogos = {
   YouTube:
@@ -25,6 +25,39 @@ const Roadmap = () => {
     useState(false);
 
   const [error, setError] = useState("");
+
+
+  // =========================================================
+  // LOAD SAVED DATA
+  // =========================================================
+
+  useEffect(() => {
+
+    const savedRoadmap =
+      localStorage.getItem("roadmap");
+
+    const savedResources =
+      localStorage.getItem("resources");
+
+    const savedQuery =
+      localStorage.getItem("query");
+
+    if (savedRoadmap) {
+
+      setRoadmap(savedRoadmap);
+    }
+
+    if (savedResources) {
+
+      setResources(JSON.parse(savedResources));
+    }
+
+    if (savedQuery) {
+
+      setQuery(savedQuery);
+    }
+
+  }, []);
 
 
   // =========================================================
@@ -64,10 +97,9 @@ const Roadmap = () => {
 
       setResources([]);
 
-      // ============================================
-      // FIRST API
-      // ROADMAP
-      // ============================================
+      localStorage.removeItem("roadmap");
+
+      localStorage.removeItem("resources");
 
       const roadmapRes = await fetch(
         "http://127.0.0.1:8000/api/roadmap/generate-roadmap/",
@@ -86,8 +118,6 @@ const Roadmap = () => {
 
       const roadmapData = await roadmapRes.json();
 
-      console.log("Roadmap:", roadmapData);
-
       if (!roadmapData.success) {
 
         setError(
@@ -99,14 +129,24 @@ const Roadmap = () => {
 
       const generatedRoadmap = roadmapData.roadmap;
 
+      localStorage.setItem(
+        "roadmap",
+        generatedRoadmap
+      );
+
+      localStorage.setItem(
+        "query",
+        query
+      );
+
       // ============================================
-      // START RESOURCES FETCH IN PARALLEL
+      // FETCH RESOURCES IN PARALLEL
       // ============================================
 
       fetchResources(generatedRoadmap);
 
       // ============================================
-      // TYPE ROADMAP
+      // TYPE EFFECT
       // ============================================
 
       await typeText(generatedRoadmap);
@@ -123,7 +163,67 @@ const Roadmap = () => {
     }
   };
 
+const saveRoadmap = async () => {
 
+  try {
+
+    const steps = roadmap
+      .split(/\n(?=\d+\.)/)
+      .filter((step) => step.trim());
+
+    const res = await fetch(
+      "http://127.0.0.1:8000/api/roadmap/save-roadmap/",
+      {
+        method: "POST",
+
+        headers: {
+          "Content-Type": "application/json",
+        },
+
+        body: JSON.stringify({
+
+          title: query,
+
+          query,
+
+          roadmap,
+
+          steps,
+
+          resources
+        }),
+      }
+    );
+
+    const data = await res.json();
+
+
+    // =====================================================
+    // ALREADY SAVED
+    // =====================================================
+
+    if (data.already_saved) {
+
+      alert(data.message);
+
+      return;
+    }
+
+
+    // =====================================================
+    // SAVED SUCCESSFULLY
+    // =====================================================
+
+    if (data.success) {
+
+      alert("Roadmap saved successfully");
+    }
+
+  } catch (err) {
+
+    console.log(err);
+  }
+};
   // =========================================================
   // FETCH RESOURCES
   // =========================================================
@@ -151,14 +251,17 @@ const Roadmap = () => {
 
       const data = await res.json();
 
-      console.log("Resources:", data);
-
       if (!data.success) {
 
         return;
       }
 
       setResources(data.resources || []);
+
+      localStorage.setItem(
+        "resources",
+        JSON.stringify(data.resources || [])
+      );
 
     } catch (err) {
 
@@ -173,182 +276,356 @@ const Roadmap = () => {
 
   return (
 
-    <div className="min-h-screen bg-slate-900 text-white p-10">
+    <div className="min-h-screen bg-[#0B1120] text-white">
 
-      {/* ========================================================= */}
-      {/* TITLE */}
-      {/* ========================================================= */}
+      {/* ===================================================== */}
+      {/* HERO */}
+      {/* ===================================================== */}
 
-      <h1 className="text-4xl font-bold mb-8">
+      <div className="sticky top-0 z-50 backdrop-blur-xl bg-black/30 border-b border-white/10">
 
-        AI Roadmap Generator
+        <div className="max-w-7xl mx-auto px-6 py-6">
 
-      </h1>
+          <div className="flex flex-col lg:flex-row gap-4 items-center">
 
-      {/* ========================================================= */}
-      {/* INPUT */}
-      {/* ========================================================= */}
+            <div className="flex-1 w-full">
 
-      <input
-        type="text"
-        placeholder="Enter topic..."
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        className="w-full p-4 rounded bg-slate-800 border border-slate-700 mb-4"
-      />
+              <h1 className="text-5xl font-black mb-2 bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">
 
-      {/* ========================================================= */}
-      {/* BUTTON */}
-      {/* ========================================================= */}
+                AI Roadmap Generator
 
-      <button
-        onClick={generateRoadmap}
-        disabled={loading}
-        className="bg-indigo-600 hover:bg-indigo-700 px-6 py-3 rounded font-semibold"
-      >
-        {loading ? "Generating..." : "Generate"}
-      </button>
+              </h1>
 
-      {/* ========================================================= */}
-      {/* ERROR */}
-      {/* ========================================================= */}
+              <p className="text-slate-400">
 
-      {error && (
+                Generate structured learning roadmaps with resources
 
-        <div className="mt-6 bg-red-500/20 border border-red-500 p-4 rounded">
+              </p>
+            </div>
 
-          {error}
+            <div className="flex gap-3 w-full lg:w-auto">
 
-        </div>
-      )}
+              <input
+                type="text"
+                placeholder="e.g. Full Stack Developer"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                className="
+                  flex-1 lg:w-[400px]
+                  bg-white/5
+                  border border-white/10
+                  focus:border-indigo-500
+                  outline-none
+                  px-5 py-4
+                  rounded-2xl
+                  text-white
+                  placeholder:text-slate-500
+                  backdrop-blur-xl
+                "
+              />
 
-      {/* ========================================================= */}
-      {/* ROADMAP */}
-      {/* ========================================================= */}
-
-      {roadmap && (
-
-        <div className="mt-10">
-
-          <h2 className="text-3xl font-bold mb-5">
-
-            Roadmap
-
-          </h2>
-
-          <div className="bg-slate-800 border border-slate-700 rounded-xl p-6 whitespace-pre-line leading-8">
-
-            {roadmap}
-
+              <button
+                onClick={generateRoadmap}
+                disabled={loading}
+                className="
+                  px-7 py-4
+                  rounded-2xl
+                  font-semibold
+                  bg-gradient-to-r
+                  from-indigo-500
+                  to-cyan-500
+                  hover:scale-105
+                  transition
+                  disabled:opacity-50
+                "
+              >
+                {loading ? "Generating..." : "Generate"}
+              </button>
+              <button
+                onClick={saveRoadmap}
+                className="
+                  px-7 py-4
+                  rounded-2xl
+                  font-semibold
+                  bg-green-600
+                  hover:bg-green-700
+                  transition
+                "
+              >
+                Save Roadmap
+              </button>
+            </div>
           </div>
         </div>
-      )}
+      </div>
 
-      {/* ========================================================= */}
-      {/* LOADING RESOURCES */}
-      {/* ========================================================= */}
+      {/* ===================================================== */}
+      {/* MAIN CONTENT */}
+      {/* ===================================================== */}
 
-      {loadingResources && (
+      <div className="max-w-7xl mx-auto px-6 py-10">
 
-        <div className="mt-10 text-indigo-400 text-lg">
+        {/* ===================================================== */}
+        {/* ERROR */}
+        {/* ===================================================== */}
 
-          Searching learning resources...
+        {error && (
 
-        </div>
-      )}
+          <div className="
+            bg-red-500/10
+            border border-red-500/30
+            rounded-2xl
+            p-5
+            text-red-300
+            mb-8
+          ">
 
-      {/* ========================================================= */}
-      {/* RESOURCES */}
-      {/* ========================================================= */}
+            {error}
 
-      {resources.length > 0 && (
+          </div>
+        )}
 
-        <div className="mt-12">
+        {/* ===================================================== */}
+        {/* ROADMAP */}
+        {/* ===================================================== */}
 
-          <h2 className="text-3xl font-bold mb-6">
+        {roadmap && (
 
-            Learning Resources
+          <div className="
+            bg-white/5
+            border border-white/10
+            backdrop-blur-xl
+            rounded-3xl
+            p-8
+            mb-12
+            shadow-2xl
+          ">
 
-          </h2>
+            <div className="flex items-center justify-between mb-8">
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
 
-            {resources.map((item, index) => (
+                <h2 className="text-3xl font-bold mb-2">
 
-              <div
-                key={index}
-                className="bg-slate-800 border border-slate-700 rounded-xl p-5"
-              >
+                  Learning Roadmap
 
-                {/* TECHNOLOGY */}
+                </h2>
 
-                <h3 className="text-2xl font-bold text-indigo-400 mb-5 capitalize">
+                <p className="text-slate-400">
 
-                  {item.technology}
+                  AI-generated roadmap for {query}
 
-                </h3>
+                </p>
+              </div>
 
-                {/* LINKS */}
+            </div>
 
-                <div className="space-y-4">
+            <div className="
+              whitespace-pre-line
+              leading-9
+              text-[17px]
+              text-slate-200
+            ">
 
-                  {item.resources.length > 0 ? (
+              {roadmap}
 
-                    item.resources.map((resource, i) => (
+            </div>
+          </div>
+        )}
+
+        {/* ===================================================== */}
+        {/* LOADING RESOURCES */}
+        {/* ===================================================== */}
+
+        {loadingResources && (
+
+          <div className="
+            bg-white/5
+            border border-white/10
+            rounded-2xl
+            p-6
+            mb-10
+            animate-pulse
+          ">
+
+            <div className="flex items-center gap-4">
+
+              <div className="
+                w-4 h-4
+                rounded-full
+                bg-indigo-400
+              " />
+
+              <p className="text-indigo-300 text-lg">
+
+                AI agents are searching for learning resources...
+
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* ===================================================== */}
+        {/* RESOURCES */}
+        {/* ===================================================== */}
+
+        {resources.length > 0 && (
+
+          <div>
+
+            <div className="flex items-center justify-between mb-8">
+
+              <div>
+
+                <h2 className="text-3xl font-bold mb-2">
+
+                  Learning Resources
+
+                </h2>
+
+                <p className="text-slate-400">
+
+                  Curated tutorials and documentation
+
+                </p>
+              </div>
+
+              <div className="
+                px-4 py-2
+                rounded-full
+                bg-cyan-500/20
+                text-cyan-300
+                text-sm
+              ">
+
+                {resources.length} Technologies
+
+              </div>
+            </div>
+
+            <div className="
+              grid
+              grid-cols-1
+              md:grid-cols-2
+              xl:grid-cols-3
+              gap-6
+            ">
+
+              {resources.map((item, index) => (
+
+                <div
+                  key={index}
+                  className="
+                    group
+                    bg-white/5
+                    border border-white/10
+                    hover:border-indigo-500/40
+                    backdrop-blur-xl
+                    rounded-3xl
+                    p-6
+                    transition-all
+                    duration-300
+                    hover:-translate-y-2
+                  "
+                >
+
+                  {/* TECHNOLOGY */}
+
+                  <div className="mb-6">
+
+                    <div className="
+                      inline-flex
+                      px-4 py-2
+                      rounded-full
+                      bg-indigo-500/20
+                      text-indigo-300
+                      text-sm
+                      mb-4
+                    ">
+
+                      {item.technology}
+
+                    </div>
+
+                    <h3 className="
+                      text-2xl
+                      font-bold
+                      capitalize
+                    ">
+
+                      {item.technology}
+
+                    </h3>
+                  </div>
+
+                  {/* LINKS */}
+
+                  <div className="space-y-4">
+
+                    {item.resources.map((resource, i) => (
 
                       <a
                         key={i}
                         href={resource.url}
                         target="_blank"
                         rel="noreferrer"
-                        className="block bg-slate-700 hover:bg-slate-600 rounded-lg p-4 transition"
+                        className="
+                          flex
+                          items-center
+                          gap-4
+                          p-4
+                          rounded-2xl
+                          bg-black/20
+                          hover:bg-indigo-500/10
+                          transition
+                          border border-white/5
+                        "
                       >
 
-                        <div className="flex items-center gap-4">
+                        <img
+                          src={platformLogos[resource.platform]}
+                          alt={resource.platform}
+                          className="
+                            w-12 h-12
+                            rounded-xl
+                            bg-white
+                            p-2
+                            object-contain
+                          "
+                        />
 
-                          {/* LOGO */}
+                        <div className="flex-1">
 
-                          <img
-                            src={platformLogos[resource.platform]}
-                            alt={resource.platform}
-                            className="w-10 h-10 object-contain bg-white rounded p-1"
-                          />
+                          <h4 className="
+                            font-semibold
+                            line-clamp-2
+                            mb-1
+                          ">
 
-                          {/* INFO */}
+                            {resource.title}
 
-                          <div>
+                          </h4>
 
-                            <div className="font-semibold">
+                          <p className="
+                            text-sm
+                            text-slate-400
+                          ">
 
-                              {resource.title}
+                            {resource.platform}
 
-                            </div>
-
-                            <div className="text-sm text-slate-300 mt-1">
-
-                              {resource.platform}
-
-                            </div>
-
-                          </div>
+                          </p>
                         </div>
+
                       </a>
-                    ))
-
-                  ) : (
-
-                    <div className="text-slate-400">
-
-                      No resources found
-
-                    </div>
-                  )}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+
+      </div>
     </div>
   );
 };

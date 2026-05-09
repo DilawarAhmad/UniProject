@@ -11,3 +11,24 @@ class Roadmap(models.Model):
 
     def __str__(self):
         return f"{self.user_id} - {self.target_role}"
+
+class SavedRoadmap(models.Model):
+
+    title = models.CharField(max_length=255)
+
+    query = models.TextField()
+
+    roadmap = models.TextField()
+
+    steps = models.JSONField(default=list)
+
+    resources = models.JSONField(default=list)
+
+    completed_steps = models.JSONField(default=list)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+    def __str__(self):
+
+        return self.title
