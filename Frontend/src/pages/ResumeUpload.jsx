@@ -127,7 +127,7 @@ const ResumeUpload = () => {
         {/* Resume Upload */}
         <input
           type="file"
-          accept=".pdf,.doc,.docx"
+          accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
           onChange={handleFile}
           className="bg-slate-700 p-3 w-full rounded-xl"
         />

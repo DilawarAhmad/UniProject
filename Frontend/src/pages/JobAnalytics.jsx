@@ -29,20 +29,19 @@ const JobAnalytics = () => {
         const userId = localStorage.getItem("userId");
 
         // ✅ CORRECT reload detection (THIS FIXES YOUR ISSUE)
-        const navEntry = performance.getEntriesByType("navigation")[0];
-        const isReload = navEntry && navEntry.type === "reload";
+        // const navEntry = performance.getEntriesByType("navigation")[0];
+        // const isReload = navEntry && navEntry.type === "reload";
 
         // ================= CACHE LOGIC =================
         const cached = localStorage.getItem("jobs_cache");
         const cachedTime = localStorage.getItem("jobs_cache_time");
 
-        const ONE_HOUR = 60 * 60 * 1000;
+        const FIVE_MINUTES = 5 * 60 * 1000;
 
         if (
-          !isReload &&   // ❗ DO NOT use cache on refresh
           cached &&
           cachedTime &&
-          Date.now() - Number(cachedTime) < ONE_HOUR
+          Date.now() - Number(cachedTime) < FIVE_MINUTES
         ) {
           console.log("⚡ Using cached jobs");
 

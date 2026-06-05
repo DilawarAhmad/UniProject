@@ -6,26 +6,171 @@ from rest_framework import status
 from resume.models import Resume
 from skills.models import Skill
 from skills_extractor import extract_skills
+# import requests
+# import fitz  # PyMuPDF
+# from docx import Document
+# from io import BytesIO
+from urllib.parse import urlparse
+from PIL import Image
+import pytesseract
 import requests
-import fitz  # PyMuPDF
+import fitz
+import textract
 
-# -----------------------------
-# Helper: Extract text from PDF
-# -----------------------------
-def extract_text_from_pdf_url(url):
-    response = requests.get(url)
-    if response.status_code != 200:
-        raise Exception("Failed to fetch PDF from URL")
-    pdf_bytes = response.content
-    pdf = fitz.open(stream=pdf_bytes, filetype="pdf")
+from docx import Document
+from io import BytesIO
+from pathlib import Path
+
+def extract_text_from_pdf_bytes(file_bytes):
+    print("going into extracting from pdf")
+    pdf = fitz.open(
+        stream=file_bytes,
+        filetype="pdf"
+    )
+
     text = ""
+
     for page in pdf:
+
         page_text = page.get_text("text") or ""
+
         text += page_text + "\n"
+
     if not text.strip():
-        raise Exception("No readable text extracted from PDF")
+
+        raise Exception(
+            "No readable text extracted from PDF"
+        )
+
     return text
 
+def extract_text_from_docx_bytes(file_bytes):
+    print("going into extract from docx")
+    doc = Document(BytesIO(file_bytes))
+
+    text = "\n".join(
+        paragraph.text
+        for paragraph in doc.paragraphs
+    )
+
+    if not text.strip():
+
+        raise Exception(
+            "No readable text extracted from DOCX"
+        )
+
+    return text
+
+def extract_text_from_doc_bytes(file_bytes):
+
+    import tempfile
+
+    with tempfile.NamedTemporaryFile(
+        suffix=".doc",
+        delete=True
+    ) as temp:
+
+        temp.write(file_bytes)
+
+        temp.flush()
+
+        text = textract.process(
+            temp.name
+        ).decode("utf-8")
+
+    if not text.strip():
+
+        raise Exception(
+            "No readable text extracted from DOC"
+        )
+
+    return text
+def extract_text_from_image_bytes(file_bytes):
+
+    image = Image.open(
+        BytesIO(file_bytes)
+    )
+
+    text = pytesseract.image_to_string(
+        image
+    )
+
+    if not text.strip():
+
+        raise Exception(
+            "No readable text extracted from image"
+        )
+
+    return text
+def extract_resume_text(url):
+
+    response = requests.get(url)
+
+    if response.status_code != 200:
+        raise Exception("Failed to fetch file")
+
+    file_bytes = response.content
+
+    filename = Path(
+        urlparse(url).path
+    ).name.lower()
+
+    if filename.endswith(".pdf"):
+
+        return extract_text_from_pdf_bytes(
+            file_bytes
+        )
+
+    elif filename.endswith(".docx"):
+
+        return extract_text_from_docx_bytes(
+            file_bytes
+        )
+
+    elif filename.endswith(".doc"):
+
+        return extract_text_from_doc_bytes(
+            file_bytes
+        )
+    elif (
+        filename.endswith(".png")
+        or filename.endswith(".jpg")
+        or filename.endswith(".jpeg")
+    ):
+
+        return extract_text_from_image_bytes(
+            file_bytes
+        )
+    else:
+
+        raise Exception(
+            "Unsupported file format"
+        )
+# # -----------------------------
+# # Helper: Extract text from PDF
+# # -----------------------------
+# def extract_text_from_pdf_url(url):
+#     response = requests.get(url)
+#     if response.status_code != 200:
+#         raise Exception("Failed to fetch PDF from URL")
+#     pdf_bytes = response.content
+#     pdf = fitz.open(stream=pdf_bytes, filetype="pdf")
+#     text = ""
+#     for page in pdf:
+#         page_text = page.get_text("text") or ""
+#         text += page_text + "\n"
+#     if not text.strip():
+#         raise Exception("No readable text extracted from PDF")
+#     return text
+# def extract_text_from_docx_bytes(file_bytes):
+#     doc = Document(BytesIO(file_bytes))
+
+#     text = "\n".join(
+#         paragraph.text
+#         for paragraph in doc.paragraphs
+#     )
+
+#     return text
 # -----------------------------
 # Unified Skill Extraction Endpoint
 # -----------------------------
@@ -44,7 +189,9 @@ def generate_profile(request):
     # 1️⃣ Resume extraction
     if resume_url:
         try:
-            text = extract_text_from_pdf_url(resume_url)
+            text = extract_resume_text(
+                resume_url
+            )
             resume_skills = extract_skills(text)
             all_skills.update(resume_skills)
 
