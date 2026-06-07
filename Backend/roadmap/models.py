@@ -13,7 +13,10 @@ class Roadmap(models.Model):
         return f"{self.user_id} - {self.target_role}"
 
 class SavedRoadmap(models.Model):
-
+    user_id = models.CharField(
+        max_length=255,
+        default=""
+    )
     title = models.CharField(max_length=255)
 
     query = models.TextField()

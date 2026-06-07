@@ -20,6 +20,7 @@ const platformColors = {
 
 
 const RoadmapDashboard = () => {
+  const userId = localStorage.getItem("userId")
 
   const [roadmaps, setRoadmaps] = useState([]);
 
@@ -39,9 +40,10 @@ const RoadmapDashboard = () => {
 
     try {
 
-      const res = await fetch(
-        "http://127.0.0.1:8000/api/roadmap/saved-roadmaps/"
-      );
+
+    const res = await fetch(
+      `http://127.0.0.1:8000/api/roadmap/saved-roadmaps/?user_id=${userId}`
+    );
 
       const data = await res.json();
 
@@ -78,6 +80,7 @@ const RoadmapDashboard = () => {
           },
 
           body: JSON.stringify({
+            user_id: userId,
             step,
           }),
         }
@@ -107,7 +110,7 @@ const RoadmapDashboard = () => {
     try {
 
       await fetch(
-        `http://127.0.0.1:8000/api/roadmap/delete-roadmap/${roadmapId}/`,
+        `http://127.0.0.1:8000/api/roadmap/delete-roadmap/${roadmapId}/?user_id=${userId}`,
         {
           method: "DELETE",
         }

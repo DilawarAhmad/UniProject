@@ -12,7 +12,7 @@ const platformLogos = {
 };
 
 const Roadmap = () => {
-
+  const userId =localStorage.getItem("userId");
   const [query, setQuery] = useState("");
 
   const [roadmap, setRoadmap] = useState("");
@@ -170,7 +170,9 @@ const saveRoadmap = async () => {
     const steps = roadmap
       .split(/\n(?=\d+\.)/)
       .filter((step) => step.trim());
+    const userId = localStorage.getItem("userId");
 
+    console.log("USER ID:", userId);
     const res = await fetch(
       "http://127.0.0.1:8000/api/roadmap/save-roadmap/",
       {
@@ -181,6 +183,7 @@ const saveRoadmap = async () => {
         },
 
         body: JSON.stringify({
+          user_id: userId,
 
           title: query,
 

@@ -1,121 +1,253 @@
-import React, { useState, useEffect, useRef } from "react";
-import { Send, Bot, User, Loader2 } from "lucide-react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+} from "react";
+
+import {
+  Send,
+  Bot,
+  Loader2,
+} from "lucide-react";
+
+import { supabase } from "../supabaseClient";
 
 const Chatbot = () => {
-  const [messages, setMessages] = useState([
-    {
-      sender: "bot",
-      text: "👋 Hi Adil! I’m your AI Career Assistant. I can help you explore skills, roles, and personalized learning paths. What would you like to know today?",
-    },
-  ]);
+  const [user, setUser] = useState(null);
+
+  const [messages, setMessages] = useState([]);
+
   const [input, setInput] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
+
+  const [isTyping, setIsTyping] =
+    useState(false);
+
   const chatEndRef = useRef(null);
 
-  // Scroll to bottom when new message appears
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    getUser();
+  }, []);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({
+      behavior: "smooth",
+    });
   }, [messages]);
+
+  const getUser = async () => {
+    try {
+      const { data, error } =
+        await supabase.auth.getUser();
+
+      if (error) {
+        console.error(error);
+        return;
+      }
+
+      if (data.user) {
+        setUser(data.user);
+
+        await loadChatHistory(
+          data.user.id,
+          data.user.user_metadata
+            ?.full_name
+        );
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const loadChatHistory = async (
+    userId,
+    fullName
+  ) => {
+    if (!userId) return;
+
+    try {
+      const response = await fetch(
+        `http://localhost:8000/api/chatbot/chat/history/${userId}/`
+      );
+
+      const data =
+        await response.json();
+
+      if (
+        data.messages &&
+        data.messages.length > 0
+      ) {
+        setMessages(data.messages);
+      } else {
+        setMessages([
+          {
+            sender: "bot",
+            text: `👋 Hi ${
+              fullName || "there"
+            }! How can I help today?`,
+          },
+        ]);
+      }
+    } catch (err) {
+      console.error(err);
+
+      setMessages([
+        {
+          sender: "bot",
+          text:
+            "👋 Welcome! How can I help today?",
+        },
+      ]);
+    }
+  };
 
   const handleSend = async (e) => {
     e.preventDefault();
+
+    if (!user) return;
+
     if (!input.trim()) return;
 
-    const newMessage = { sender: "user", text: input.trim() };
-    setMessages((prev) => [...prev, newMessage]);
+    const currentMessage =
+      input.trim();
+
+    const userMessage = {
+      sender: "user",
+      text: currentMessage,
+    };
+
+    setMessages((prev) => [
+      ...prev,
+      userMessage,
+    ]);
+
     setInput("");
+
     setIsTyping(true);
 
-    // Simulate AI typing delay (replace with backend call later)
-    setTimeout(() => {
-      const dummyResponses = [
-        "Based on your resume, I’d suggest focusing on improving your backend development skills — FastAPI and database design seem promising!",
-        "React proficiency looks strong. Would you like me to recommend some advanced full-stack projects?",
-        "The data shows a rising demand for Machine Learning Engineers. Should I generate a learning roadmap for that role?",
-        "You can enhance your employability by contributing to open-source projects on GitHub. I can show trending repos if you like.",
-      ];
+    try {
+      const response = await fetch(
+        "http://localhost:8000/api/chatbot/chat/",
+        {
+          method: "POST",
 
-      const randomResponse =
-        dummyResponses[Math.floor(Math.random() * dummyResponses.length)];
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+
+          body: JSON.stringify({
+            user_id: user.id,
+
+            name:
+              user.user_metadata
+                ?.full_name ||
+
+              user.email,
+
+            message:
+              currentMessage,
+          }),
+        }
+      );
+
+      const data =
+        await response.json();
 
       setMessages((prev) => [
         ...prev,
-        { sender: "bot", text: randomResponse },
+        {
+          sender: "bot",
+          text:
+            data.reply ||
+            "No response received.",
+        },
       ]);
-      setIsTyping(false);
-    }, 1500);
+    } catch (error) {
+      console.error(error);
 
-    // Future: Replace this with your real backend call
-    /*
-    const response = await fetch("http://localhost:8000/api/chatbot", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: input }),
-    });
-    const data = await response.json();
-    setMessages((prev) => [...prev, { sender: "bot", text: data.reply }]);
-    setIsTyping(false);
-    */
+      setMessages((prev) => [
+        ...prev,
+        {
+          sender: "bot",
+          text:
+            "Something went wrong.",
+        },
+      ]);
+    } finally {
+      setIsTyping(false);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white flex flex-col">
-      {/* Header */}
-      <header className="bg-slate-800 py-4 shadow-md flex items-center justify-center">
-        <h1 className="text-2xl font-semibold flex items-center gap-2">
-          <Bot className="text-indigo-400" /> Career Guidance Assistant
+    <div className="h-screen bg-slate-900 flex flex-col text-white">
+      <header className="bg-slate-800 p-4 shadow-md">
+        <h1 className="text-xl font-semibold flex items-center gap-2">
+          <Bot />
+          Career Assistant
         </h1>
       </header>
 
-      {/* Chat Container */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-4 max-w-4xl mx-auto w-full">
-        {messages.map((msg, index) => (
-          <div
-            key={index}
-            className={`flex ${
-              msg.sender === "user" ? "justify-end" : "justify-start"
-            }`}
-          >
+      <div className="flex-1 overflow-y-auto p-4">
+        {messages.map(
+          (msg, index) => (
             <div
-              className={`max-w-[75%] p-4 rounded-2xl shadow-md ${
+              key={index}
+              className={`flex mb-4 ${
                 msg.sender === "user"
-                  ? "bg-indigo-600 text-white rounded-br-none"
-                  : "bg-slate-800 text-gray-200 rounded-bl-none"
+                  ? "justify-end"
+                  : "justify-start"
               }`}
             >
-              {msg.text}
+              <div
+                className={`max-w-[70%] px-4 py-3 rounded-xl ${
+                  msg.sender ===
+                  "user"
+                    ? "bg-indigo-600"
+                    : "bg-slate-800"
+                }`}
+              >
+                {msg.text}
+              </div>
             </div>
-          </div>
-        ))}
+          )
+        )}
 
-        {/* Typing Indicator */}
         {isTyping && (
-          <div className="flex justify-start">
-            <div className="bg-slate-800 text-gray-400 px-4 py-3 rounded-2xl">
-              <Loader2 className="inline animate-spin mr-2" size={16} />
-              Typing...
+          <div className="flex">
+            <div className="bg-slate-800 px-4 py-3 rounded-xl">
+              <Loader2
+                className="animate-spin inline mr-2"
+                size={16}
+              />
+              Thinking...
             </div>
           </div>
         )}
+
         <div ref={chatEndRef} />
       </div>
 
-      {/* Input Box */}
       <form
         onSubmit={handleSend}
-        className="bg-slate-800 p-4 border-t border-slate-700 flex items-center gap-4"
+        className="p-4 bg-slate-800 flex gap-2"
       >
-        <User className="text-gray-400" />
         <input
-          type="text"
           value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask me about your career path..."
-          className="flex-1 bg-slate-700 text-white p-3 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500"
+          onChange={(e) =>
+            setInput(
+              e.target.value
+            )
+          }
+          placeholder="Ask anything..."
+          className="flex-1 bg-slate-700 p-3 rounded-lg outline-none"
         />
+
         <button
           type="submit"
-          className="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-xl font-semibold flex items-center gap-1 transition-all"
+          disabled={
+            isTyping || !user
+          }
+          className="bg-indigo-600 px-4 rounded-lg disabled:opacity-50"
         >
           <Send size={18} />
         </button>

@@ -3,7 +3,7 @@
 from django.http import JsonResponse
 
 from django.views.decorators.csrf import csrf_exempt
-
+from django.shortcuts import get_object_or_404
 import json
 from .models import SavedRoadmap
 from .roadmap_graph import roadmap_graph
@@ -91,7 +91,13 @@ def save_roadmap(request):
     try:
 
         data = json.loads(request.body)
-
+        print("data",data)
+        user_id = data.get("user_id")
+        if not user_id:
+            return JsonResponse({
+                "success": False,
+                "error": "user_id required"
+            }, status=400)
         title = data.get("title")
 
         query = data.get("query")
@@ -108,6 +114,7 @@ def save_roadmap(request):
         # =====================================================
 
         existing = SavedRoadmap.objects.filter(
+            user_id=user_id,
 
             query=query,
 
@@ -134,7 +141,10 @@ def save_roadmap(request):
         # CREATE NEW ROADMAP
         # =====================================================
 
+        
         saved = SavedRoadmap.objects.create(
+
+            user_id=user_id,
 
             title=title,
 
@@ -148,7 +158,6 @@ def save_roadmap(request):
 
             completed_steps=[]
         )
-
 
         return JsonResponse({
 
@@ -176,8 +185,18 @@ def get_saved_roadmaps(request):
 
     try:
 
-        roadmaps = SavedRoadmap.objects.all().order_by("-created_at")
+        user_id = request.GET.get(
+            "user_id"
+        )
+        if not user_id:
+            return JsonResponse({
+                "success": False,
+                "error": "user_id required"
+            }, status=400)
 
+        roadmaps = SavedRoadmap.objects.filter(
+            user_id=user_id
+        ).order_by("-created_at")
         data = []
 
         for roadmap in roadmaps:
@@ -241,8 +260,17 @@ def toggle_step(request, roadmap_id):
 
         step = data.get("step")
 
-        roadmap = SavedRoadmap.objects.get(id=roadmap_id)
-
+        user_id = data.get("user_id")
+        if not user_id:
+            return JsonResponse({
+                "success": False,
+                "error": "user_id required"
+            }, status=400)
+        roadmap = get_object_or_404(
+            SavedRoadmap,
+            id=roadmap_id,
+            user_id=user_id
+        )
         completed = roadmap.completed_steps
 
 
@@ -283,8 +311,19 @@ def delete_roadmap(request, roadmap_id):
 
     try:
 
-        roadmap = SavedRoadmap.objects.get(id=roadmap_id)
-
+        user_id = request.GET.get(
+            "user_id"
+        )
+        if not user_id:
+            return JsonResponse({
+                "success": False,
+                "error": "user_id required"
+            }, status=400)
+        roadmap = get_object_or_404(
+            SavedRoadmap,
+            id=roadmap_id,
+            user_id=user_id
+        )
         roadmap.delete()
 
         return JsonResponse({
