@@ -483,9 +483,6 @@ def scrape_linkedin(keyword):
                             strip=True
                         )
 
-                        # shorten description
-                        description = description[:300]
-
                     detail_page.close()
 
                 except Exception as e:

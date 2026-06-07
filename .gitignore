@@ -6,3 +6,6 @@ Backend/.env
 Backend/db.sqlite3
 Backend/jobs/__pycache__/job_sources.cpython-314.pyc
 Backend/jobs/__pycache__/views.cpython-314.pyc
+__pycache__/
+*.pyc
+nextFeature.txt

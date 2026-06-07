@@ -1,4 +1,5 @@
 import React, { useEffect, useState,useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   BarChart,
   Bar,
@@ -21,6 +22,7 @@ const JobAnalytics = () => {
   const [loading, setLoading] = useState(true);
   const hasFetched = useRef(false);
 
+  const navigate = useNavigate()
   const COLORS = ["#6366f1", "#22d3ee", "#a78bfa", "#fbbf24", "#4ade80", "#f87171"];
 
   useEffect(() => {
@@ -241,7 +243,7 @@ const JobAnalytics = () => {
                     {job.description}
                   </p>
 
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap">
                     <a
                       href={job.link}
                       target="_blank"
@@ -250,7 +252,16 @@ const JobAnalytics = () => {
                     >
                       View
                     </a>
-
+                    <button
+                      onClick={() => {
+                        navigate("/job-comparison", {
+                          state: { job }
+                        });
+                      }}
+                      className="bg-yellow-500 hover:bg-yellow-600 px-4 py-2 rounded text-sm"
+                    >
+                      Compare
+                    </button>
                     <button
                       onClick={() => applyJob(job)}
                       disabled={isApplied}

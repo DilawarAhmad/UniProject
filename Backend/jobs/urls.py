@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import get_jobs_for_user
+from .views import get_jobs_for_user, compare_job
 from django.urls import path
 from .views_dashboard import *
 
@@ -13,4 +13,5 @@ urlpatterns = [
     path("apply/<str:user_id>/", apply_job),
     path("update-status/<str:user_id>/", update_job_status),
     path("delete-applied/<str:user_id>/", delete_applied_job),
+    path("compare/<str:user_id>/",compare_job)
 ]

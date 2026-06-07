@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from skills.models import Skill
 from .utils import get_skill_names
 from .job_sources import get_trending_roles,build_query,build_roles,select_roles,scrape_naukri,scrape_linkedin
+from skills_extractor import extract_skills
 
 @api_view(["GET"])
 def get_jobs_for_user(request, user_id):
@@ -30,4 +31,64 @@ def get_jobs_for_user(request, user_id):
         "skills_used": skill_names,
         "recommended_jobs": jobs,
         "trending_jobs": trending
+    })
+
+
+@api_view(["POST"])
+def compare_job(request, user_id):
+
+    description = request.data.get(
+        "description",
+        ""
+    )
+    print("description ",description)
+    # skills extracted from job description
+    job_skills = set(
+        skill.lower()
+        for skill in extract_skills(description)
+    )
+
+    # skills stored for user
+    user_skills = set(
+        skill.lower()
+        for skill in Skill.objects
+        .filter(user_id=user_id)
+        .values_list("name", flat=True)
+    )
+    print("user skills",user_skills)
+    print("jobs skills",job_skills)
+    matched = []
+    missing = []
+
+    for skill in job_skills:
+
+        if skill in user_skills:
+            matched.append(skill)
+        else:
+            missing.append(skill)
+
+    score = 0
+
+    if len(job_skills) > 0:
+        score = round(
+            len(matched)
+            / len(job_skills)
+            * 100
+        )
+
+    return Response({
+
+        "job_skills": sorted(
+            list(job_skills)
+        ),
+
+        "matched_skills": sorted(
+            matched
+        ),
+
+        "missing_skills": sorted(
+            missing
+        ),
+
+        "match_score": score,
     })

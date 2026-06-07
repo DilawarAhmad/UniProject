@@ -11,6 +11,7 @@ import Signup from "./pages/Signup";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Skills from "./pages/skills";
 import Layout from "./components/Layout";
+import JobComparison from "./pages/JobComparison";
 function App() {
   return (
     <BrowserRouter>
@@ -26,6 +27,8 @@ function App() {
           <Route path="/roadmap" element={<Roadmap />} />
           <Route path="/chatbot" element={<Chatbot />} />
           <Route path="/analytics" element={<JobAnalytics />} />
+          <Route path="/job-comparison" element={<JobComparison />} />
+
         </Route>
 
         {/* 🌐 Public Routes (no header) */}
