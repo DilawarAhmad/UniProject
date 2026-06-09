@@ -4,8 +4,33 @@ from django.db import models
 from django.db import models
 
 
-class ChatMessage(models.Model):
 
+class Conversation(models.Model):
+
+    user_id = models.CharField(
+        max_length=255
+    )
+
+    title = models.CharField(
+        max_length=255,
+        default="New Conversation"
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True
+    )
+
+
+class ChatMessage(models.Model):
+    conversation = models.ForeignKey(
+        Conversation,
+        on_delete=models.CASCADE,
+        related_name="messages",
+    )
     user_id = models.CharField(max_length=255)
 
     role = models.CharField(
@@ -20,3 +45,4 @@ class ChatMessage(models.Model):
 
     class Meta:
         ordering = ["created_at"]
+

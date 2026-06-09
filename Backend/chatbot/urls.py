@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import ChatAPIView, ChatHistoryAPIView
+from .views import ChatAPIView, ChatHistoryAPIView,ConversationAPIView,ConversationListAPIView
 urlpatterns = [
 
     path(
@@ -8,7 +8,17 @@ urlpatterns = [
     ),
 
     path(
-        "chat/history/<str:user_id>/",
+        "chat/history/<int:conversation_id>/",
         ChatHistoryAPIView.as_view()
+    ),
+
+    path(
+        "conversations/",
+        ConversationAPIView.as_view()
+    ),
+
+    path(
+        "conversations/<str:user_id>/",
+        ConversationListAPIView.as_view()
     ),
 ]
