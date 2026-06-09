@@ -53,114 +53,162 @@ const Skills = () => {
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 text-white p-6">
 
       {/* HEADER */}
-      <div className="max-w-6xl mx-auto mb-12">
-        <h1 className="text-4xl font-bold text-center flex items-center justify-center gap-2">
+      <div className="max-w-6xl mx-auto mb-8">
+
+        <h1 className="text-5xl font-extrabold text-center bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent flex items-center justify-center gap-3">
           <Sparkles className="text-indigo-400" />
-          Skill Intelligence Dashboard
+          Skill Intelligence
         </h1>
 
-        <p className="text-center text-gray-400 mt-2">
-          AI extracted skills from your resume
+        <p className="text-center text-gray-400 mt-3 text-lg">
+          AI-powered analysis of your resume skills
         </p>
+
       </div>
 
+      {/* TOP CARDS */}
+      <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-6 mb-8">
 
-      {/* SCORE CARD */}
-      <div className="max-w-3xl mx-auto mb-12 bg-white/5 backdrop-blur-lg border border-white/10 rounded-3xl p-10 shadow-xl hover:shadow-indigo-500/10 transition">
+        {/* SCORE */}
+        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-lg">
 
-        <h2 className="text-xl font-semibold text-indigo-300 text-center mb-6">
-          Overall Skill Score
-        </h2>
+          <p className="text-gray-400 text-sm">
+            Overall Score
+          </p>
 
-        <div className="w-full h-[280px]">
-          <ResponsiveContainer>
-            <RadialBarChart
-              cx="50%"
-              cy="50%"
-              innerRadius="70%"
-              outerRadius="100%"
-              barSize={22}
-              data={skillChartData}
-              startAngle={90}
-              endAngle={-270}
-            >
-              <RadialBar
-                dataKey="value"
-                cornerRadius={12}
-                background
-              />
-            </RadialBarChart>
-          </ResponsiveContainer>
+          <div className="w-32 h-32 mx-auto mt-2">
+            <ResponsiveContainer>
+              <RadialBarChart
+                cx="50%"
+                cy="50%"
+                innerRadius="70%"
+                outerRadius="100%"
+                barSize={12}
+                data={skillChartData}
+                startAngle={90}
+                endAngle={-270}
+              >
+                <RadialBar
+                  dataKey="value"
+                  cornerRadius={10}
+                  background
+                />
+              </RadialBarChart>
+            </ResponsiveContainer>
+          </div>
+
+          <p className="text-center text-3xl font-bold text-indigo-400">
+            {score}/100
+          </p>
+
         </div>
 
-        <p className="text-center text-4xl font-bold mt-3 text-indigo-400">
-          {score}/100
-        </p>
+        {/* SKILL COUNT */}
+        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-lg flex flex-col justify-center">
+
+          <p className="text-gray-400 text-sm">
+            Skills Detected
+          </p>
+
+          <h2 className="text-5xl font-bold text-purple-400 mt-3">
+            {skills.length}
+          </h2>
+
+          <p className="text-gray-500 mt-2">
+            Technologies identified from your resume
+          </p>
+
+        </div>
+
+        {/* INSIGHT */}
+        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-lg">
+
+          <p className="text-gray-400 text-sm mb-3">
+            Profile Insight
+          </p>
+
+          <p className="text-gray-300 leading-relaxed">
+            Your resume demonstrates a strong technical foundation across
+            software development, databases, and modern web technologies.
+          </p>
+
+        </div>
 
       </div>
 
+      {/* SKILLS */}
+      <div className="max-w-6xl mx-auto bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-xl">
 
-      {/* SKILLS SECTION */}
-      <div className="max-w-6xl mx-auto bg-white/5 backdrop-blur-lg border border-white/10 rounded-3xl p-10 shadow-xl">
-
-        <h2 className="text-2xl font-semibold text-indigo-300 mb-8 text-center">
+        <h2 className="text-2xl font-semibold text-center text-indigo-300 mb-8">
           Detected Skills
         </h2>
 
         {skills.length === 0 ? (
           <p className="text-center text-gray-400">
-            No skills found yet. Upload your resume.
+            No skills found yet.
           </p>
         ) : (
 
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="flex flex-wrap justify-center gap-3">
 
             {skills.map((skill, index) => (
+
               <div
                 key={index}
-                className="bg-slate-800/60 p-5 rounded-xl border border-slate-700 hover:border-indigo-500 transition"
+                className="
+                  px-5
+                  py-3
+                  rounded-full
+                  bg-indigo-500/10
+                  border
+                  border-indigo-500/20
+                  text-indigo-200
+                  font-medium
+                  hover:bg-indigo-500/20
+                  hover:border-indigo-400
+                  hover:scale-105
+                  transition-all
+                  duration-200
+                  cursor-default
+                "
               >
-
-                {/* Skill name */}
-                <div className="flex justify-between mb-2">
-                  <span className="font-semibold text-indigo-200">
-                    {skill.name}
-                  </span>
-
-                  <span className="text-sm text-gray-400">
-                    {skill.level}%
-                  </span>
-                </div>
-
-                {/* Progress */}
-                <div className="w-full bg-slate-700 h-2 rounded-full overflow-hidden">
-                  <div
-                    className="h-2 bg-gradient-to-r from-indigo-500 to-purple-500"
-                    style={{ width: `${skill.level}%` }}
-                  />
-                </div>
-
-                {/* Confidence */}
-                <p className="text-xs text-gray-400 mt-2">
-                  Confidence: {(skill.confidence * 100).toFixed(0)}%
-                </p>
-
+                {skill.name}
               </div>
+
             ))}
 
           </div>
+
         )}
 
       </div>
-      {/* ANALYTICS BUTTON */}
-      <div className="max-w-6xl mx-auto mt-10 flex justify-center">
+      
+
+      {/* BUTTON */}
+      <div className="max-w-6xl mx-auto mt-8 flex justify-center">
+
         <button
-          onClick={() => navigate("/analytics")}
-          className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 rounded-xl font-semibold shadow-lg transition"
+          onClick={() =>
+            navigate("/analytics")
+          }
+          className="
+            px-8
+            py-3
+            bg-gradient-to-r
+            from-indigo-600
+            to-purple-600
+            hover:scale-105
+            transition
+            rounded-xl
+            font-semibold
+            shadow-lg
+          "
         >
           View Job Analytics
         </button>
+
       </div>
+
     </div>
   );
 };
