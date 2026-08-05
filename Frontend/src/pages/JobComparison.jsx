@@ -50,7 +50,7 @@ const JobComparison = () => {
       <div className="max-w-6xl mx-auto">
 
         <h1 className="text-5xl font-bold mb-2">
-          Job Match Analysis
+          ATS Match Analysis
         </h1>
 
         <p className="text-slate-400 mb-10">
@@ -85,7 +85,7 @@ const JobComparison = () => {
             </div>
 
             <p className="mt-4 text-slate-400">
-              Skill Match Score
+              ATS Match Score
             </p>
 
           </div>

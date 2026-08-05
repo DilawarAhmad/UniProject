@@ -1,4 +1,4 @@
-
+from .validators import is_cs_resume
 
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -192,6 +192,13 @@ def generate_profile(request):
             text = extract_resume_text(
                 resume_url
             )
+            if not is_cs_resume(text):
+                return Response(
+                    {
+                        "error": "Invalid resume. Please upload a Computer Science or IT-related resume."
+                    },
+                    status=400
+                )
             resume_skills = extract_skills(text)
             all_skills.update(resume_skills)
 

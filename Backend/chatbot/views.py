@@ -120,7 +120,7 @@ class ChatAPIView(APIView):
             user_id=user_id
         )
         name = request.data.get("name")
-        n8n_url = "https://adil11.app.n8n.cloud/webhook/28481d02-be2c-4c6a-aa33-b9d620256239"
+        n8n_url = "https://adil1991.app.n8n.cloud/webhook/28481d02-be2c-4c6a-aa33-b9d620256239"
         message = request.data.get(
             "message"
         )

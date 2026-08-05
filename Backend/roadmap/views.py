@@ -1,5 +1,5 @@
 # views.py
-
+from .validators import is_computer_science_query
 from django.http import JsonResponse
 
 from django.views.decorators.csrf import csrf_exempt
@@ -19,34 +19,39 @@ from .resource_graph import resource_graph
 def generate_roadmap(request):
 
     try:
-
         data = json.loads(request.body)
 
         query = data.get("query", "").strip()
 
-        result = roadmap_graph.invoke({
+        print("User Query:", query)
+        print("Validation:", is_computer_science_query(query))
 
+        if not query:
+            return JsonResponse({
+                "success": False,
+                "error": "Query cannot be empty."
+            }, status=400)
+
+        if not is_computer_science_query(query):
+            return JsonResponse({
+                "success": False,
+                "error": "Invalid query. Please enter a Computer Science or IT-related topic."
+            }, status=400)
+
+        result = roadmap_graph.invoke({
             "query": query
         })
 
         return JsonResponse({
-
             "success": True,
-
             "roadmap": result["enhanced_roadmap"]
-
         })
 
     except Exception as e:
-
         return JsonResponse({
-
             "success": False,
-
             "error": str(e)
-
         }, status=500)
-    
 
 # views.py
 

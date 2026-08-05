@@ -59,22 +59,23 @@ const ResumeUpload = () => {
     return signedUrlData.signedUrl;
   };
 
-  //  Send data to backend
   const sendToBackend = async (body) => {
-    const res = await fetch(`${API_URL}/generate-profile/`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
+  const res = await fetch(`${API_URL}/generate-profile/`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
 
-    if (!res.ok) {
-      const text = await res.text();
-      console.error("Backend error:", text);
-      throw new Error(`Backend returned ${res.status}`);
-    }
+  const data = await res.json();
 
-    return res.json();
-  };
+  if (!res.ok) {
+    throw new Error(data.error || "Something went wrong");
+  }
+
+  return data;
+};
 
   //  Handle submit (resume + manual + GitHub)
   const handleSubmit = async () => {
@@ -111,7 +112,7 @@ const ResumeUpload = () => {
       navigate("/skills");
     } catch (err) {
       console.error("❌ Upload failed:", err);
-      alert("Error — try again");
+      alert(err.message);
     } finally {
       setLoading(false);
     }
